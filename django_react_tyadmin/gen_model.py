@@ -43,7 +43,7 @@ data_one = json.loads(data_one)
 type_map = {
     int: 'IntegerField()',
     str: 'CharField(max_length=%c)',
-    bool: 'BooleanField'
+    bool: 'BooleanField()'
 }
 ret_lines = []
 for key, value in data_one.items():

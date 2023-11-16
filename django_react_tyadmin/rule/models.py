@@ -4,7 +4,7 @@ from django.db import models
 # Create your models here.
 class Rule(models.Model):
     key = models.IntegerField()
-    disabled = models.BooleanField
+    disabled = models.BooleanField(default=True)
     href = models.CharField(max_length=36)
     avatar = models.CharField(max_length=134)
     name = models.CharField(max_length=24)
