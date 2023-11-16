@@ -39,9 +39,19 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+
+    def enforce_csrf(self, request):
+        return  # To not perform the csrf check previously happening
+
 
 class LoginView(APIView):
     """登录视图: 使用用户名密码登录"""
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -59,7 +69,7 @@ class LoginView(APIView):
             return JsonResponse({
                 "status": 'ok',
                 "type": "account",
-                "currentAuthority": ""
+                "currentAuthority": "admin"
             })
         else:
             raise ValidationError({"password": ["密码错误"]})
@@ -67,14 +77,22 @@ class LoginView(APIView):
 
 class CurrentUserView(APIView):
     """获取当前用户"""
+    authentication_classes = (CsrfExemptSessionAuthentication,)
 
     def get(self, request, *args, **kwargs):
         if request.user:
             try:
-                return JsonResponse({"user": {"name": request.user.username,
-                                              "avatar": "https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png",
-                                              "userid": request.user.id, "email": request.user.email,
-                                              }, "permissions": ['monitor:business:add']})
+                return JsonResponse({
+                    "success": True,
+                    "data": {
+                        "name": request.user.username,
+                        "avatar": "https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png",
+                        "userid": request.user.id,
+                        "email": request.user.email,
+                        "access": "admin",
+
+                    }
+                })
             except AttributeError:
                 # 匿名用户
                 return JsonResponse({
@@ -88,6 +106,7 @@ class CurrentUserView(APIView):
 
 class UserLogoutView(APIView):
     """注销视图类"""
+    authentication_classes = (CsrfExemptSessionAuthentication,)
 
     def get(self, request):
         # django自带的logout

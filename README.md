@@ -9,7 +9,7 @@ cd tyadmin && tyarn
 npm run start
 ```
 
-1. 开启多页签配置
+### 1. 开启多页签配置
 
 config/config.ts
 
@@ -21,7 +21,7 @@ config/config.ts
   },
 ```
 
-2. 新建后端api对接登录
+### 2. 新建后端api对接登录
 
 ```bash
 pip install django
@@ -68,22 +68,6 @@ INSTALLED_APPS = [
 django_react_tyadmin/django_react_tyadmin/urls.py
 
 ```python
-"""
-URL configuration for django_react_tyadmin project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
 from drf_yasg.utils import swagger_auto_schema
@@ -109,9 +93,19 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+
+    def enforce_csrf(self, request):
+        return  # To not perform the csrf check previously happening
+
 
 class LoginView(APIView):
     """登录视图: 使用用户名密码登录"""
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -129,7 +123,7 @@ class LoginView(APIView):
             return JsonResponse({
                 "status": 'ok',
                 "type": "account",
-                "currentAuthority": ""
+                "currentAuthority": "admin"
             })
         else:
             raise ValidationError({"password": ["密码错误"]})
@@ -137,14 +131,22 @@ class LoginView(APIView):
 
 class CurrentUserView(APIView):
     """获取当前用户"""
+    authentication_classes = (CsrfExemptSessionAuthentication,)
 
     def get(self, request, *args, **kwargs):
         if request.user:
             try:
-                return JsonResponse({"user": {"name": request.user.username,
-                                              "avatar": "https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png",
-                                              "userid": request.user.id, "email": request.user.email,
-                                              }, "permissions": ['monitor:business:add']})
+                return JsonResponse({
+                    "success": True,
+                    "data": {
+                        "name": request.user.username,
+                        "avatar": "https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png",
+                        "userid": request.user.id,
+                        "email": request.user.email,
+                        "access": "admin",
+
+                    }
+                })
             except AttributeError:
                 # 匿名用户
                 return JsonResponse({
@@ -158,6 +160,7 @@ class CurrentUserView(APIView):
 
 class UserLogoutView(APIView):
     """注销视图类"""
+    authentication_classes = (CsrfExemptSessionAuthentication,)
 
     def get(self, request):
         # django自带的logout
@@ -177,6 +180,7 @@ urlpatterns = [
     path('api/currentUser', CurrentUserView.as_view(), name='user_current_user'),
     path('api/logout', UserLogoutView.as_view(), name='user_logout')
 ]
+
 ```
 
 
@@ -184,5 +188,24 @@ urlpatterns = [
 ![](http://cdn.pic.funpython.cn/image/202311162310267.png)
 
 
-### 前端proxy 对接到后端
+### 前端proxy 对接到后端。后端接口根据npm run start 修改
 
+config/proxy.ts
+
+```js
+  dev: {
+    // localhost:8000/api/** -> https://preview.pro.ant.design/api/**
+    '/api/': {
+      // 要代理的地址
+      target: 'http://127.0.0.1:8001/',
+      // 配置了这个可以从 http 代理到 https
+      // 依赖 origin 的功能可能需要这个，比如 cookie
+      changeOrigin: true,
+    },
+  },
+```
+
+```bash
+npm run start 查看 login currentUser 的返回json。修改对应后端接口
+npm run dev
+```
