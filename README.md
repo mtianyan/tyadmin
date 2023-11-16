@@ -273,3 +273,20 @@ base_tpl = base_tpl.replace('%content', "\n".join(ret_lines))
 print(base_tpl)
 
 ```
+### todo: 模态框 增删改查
+
+### todo: 新页面 增删改查
+
+### todo: 服务器返回左侧菜单
+
+### todo: 页面权限
+
+### todo: 按钮权限
+
+### todo: 数据统计控制台
+
+### todo: openapi 生成接口
+
+
+
+
